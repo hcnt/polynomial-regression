@@ -1,6 +1,6 @@
 let pointsX = [];
 let pointsY = [];
-let a, b;
+let a, b, c;
 let optimizer;
 
 function mouseClicked() {
@@ -8,6 +8,15 @@ function mouseClicked() {
     let y = map(mouseY, height, 0, 0, 1);
     pointsX.push(x);
     pointsY.push(y);
+}
+
+function setup() {
+    createCanvas(700, 700);
+    a = tf.variable(tf.scalar(random(1)));
+    b = tf.variable(tf.scalar(random(1)));
+    c = tf.variable(tf.scalar(random(1)));
+    optimizer = tf.train.adam(0.05);
+
 }
 
 function drawPoints() {
@@ -20,39 +29,45 @@ function drawPoints() {
 }
 
 function predict(xArray) {
-    x = tf.tensor1d(xArray);
-    return a.mul(x).add(b);
+    let x = tf.tensor1d(xArray);
+    return a.mul(x.square()).add(b.mul(x)).add(c);
 }
 
 function loss(target, guess) {
     return target.sub(guess).square().mean()
 }
 
-function drawLine(a, b) {
-    bMapped = map(b.get(), 0, 1, height, 0);
+function drawLine(aScalar, bScalar, cScalar) {
+
+    let c = cScalar.get()
+    let b = bScalar.get();
+    let a = aScalar.get();
+
+    noFill();
+    strokeWeight(2);
     stroke(255);
-    strokeWeight(5);
-    line(0, bMapped, width, -a.get() * width + bMapped);
+    beginShape();
+    for (let i = 0; i < 1; i += 0.01) {
+        let x = map(i, 0, 1, 0, width);
+        let y = map(a * (i ** 2) + b * i + c, 0, 1, height, 0);
+        vertex(x, y);
+    }
+    endShape();
 }
 
 function train(optimizer) {
-    y = tf.tensor1d(pointsY);
-    optimizer.minimize(() => loss(y, predict(pointsX)), true, [a, b]);
+    let y = tf.tensor1d(pointsY);
+    optimizer.minimize(() => loss(y, predict(pointsX)), true, [a, c, b]);
 }
 
-function setup() {
-    createCanvas(700, 700);
-    a = tf.variable(tf.scalar(random(1)));
-    b = tf.variable(tf.scalar(random(1)));
-    optimizer = tf.train.sgd(0.1);
-
-}
 
 function draw() {
-    background(10)
-    if (pointsX.length > 0) {
-        train(optimizer);
-        drawPoints();
-        drawLine(a, b);
-    }
+    tf.tidy(() => {
+        background(10)
+        if (pointsX.length > 0) {
+            train(optimizer);
+            drawPoints();
+            drawLine(a, b, c);
+        }
+    });
 }
