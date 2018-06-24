@@ -1,25 +1,32 @@
 let pointsX = [];
 let pointsY = [];
-let polynomialDegree = 4;
+let polynomialDegree = 2;
 let coefficients = new Array(polynomialDegree);
 let optimizer;
+let xsToDraw = [];
 polynomialDegree += 1;
 
+function setupPointsToDraw() {
+    for (let i = 0.01; i < 1; i += 0.01) {
+        xsToDraw.push(i);
+    }
+}
+
 function addPoints() {
-    pointsX.push(0.1);
-    pointsY.push(0.2);
+    // pointsX.push(0.1);
+    // pointsY.push(0.2);
 
-    pointsX.push(0.3);
-    pointsY.push(0.5);
+    // pointsX.push(0.3);
+    // pointsY.push(0.5);
 
-    pointsX.push(0.5);
-    pointsY.push(0.2);
+    // pointsX.push(0.5);
+    // pointsY.push(0.2);
 
-    pointsX.push(0.7);
-    pointsY.push(0.6);
+    // pointsX.push(0.7);
+    // pointsY.push(0.6);
 
-    pointsX.push(0.9);
-    pointsY.push(0.1);
+    // pointsX.push(0.9);
+    // pointsY.push(0.1);
 }
 
 function mouseClicked() {
@@ -31,17 +38,20 @@ function mouseClicked() {
 
 function setup() {
     createCanvas(700, 700);
+    // frameRate(1);
     for (let i = 0; i < polynomialDegree; i++) {
         coefficients[i] = tf.variable(tf.scalar(random(1)));
     }
-    optimizer = tf.train.adam(0.01);
+    optimizer = tf.train.adam(0.02);
     addPoints();
+    setupPointsToDraw();
 
 }
 
 function train(optimizer) {
     let y = tf.tensor1d(pointsY);
     optimizer.minimize(() => loss(y, predict(pointsX)), true);
+    y.dispose();
 }
 
 function loss(target, guess) {
@@ -54,7 +64,21 @@ function predict(xArray) {
     for (let i = 0; i < polynomialDegree; i++) {
         let degree = tf.scalar(i);
         result = result.add(x.pow(degree).mul(coefficients[i]));
+        // console.log(i);
+        // console.log("coeffitients");
+        // coefficients[i].print();
+        // console.log("degree");
+        // degree.print();
+        // console.log("x");
+        // x.print();
+        // console.log("");
+        // console.log("result:")
+        // result.print();
+        // console.log("-----------------");
+        degree.dispose();
     }
+    x.dispose();
+    // console.log("/////////////////////////");
     return result;
 }
 
@@ -76,12 +100,16 @@ function drawLine() {
     strokeWeight(2);
     stroke(255);
     beginShape();
-    for (let i = 0; i < 1; i += 0.01) {
-        let x = map(i, 0, 1, 0, width);
-        let y = map(predict([i]).get(0), 0, 1, height, 0);
-        vertex(x, y);
-    }
-    endShape();
+    predict(xsToDraw).data().then(ysToDraw => {
+        for (let i = 0; i < 99; i += 1) {
+            let x = map(xsToDraw[i], 0, 1, 0, width);
+            let y = map(ysToDraw[i], 0, 1, height, 0);
+            vertex(x, y);
+        }
+        endShape();
+    });
+
+
 }
 
 
